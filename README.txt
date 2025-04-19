@@ -80,7 +80,7 @@ RUN wget https://sourceforge.net/projects/boost/files/boost/1.76.0/boost_1_76_0.
     ./b2 install && \
     rm -rf /tmp/boost_1_76_0 /tmp/boost_1_76_0.tar.gz
     
-# 5 Авторский патч не применялся, поэтому его копирование в контейнер и все связанные с ним строчки далее закоменчены
+# 5 Авторский патч не применялся, поэтому его копирование в контейнер и все связанные с ним строчки далее закомменчены
 
 # 6 Скачана нужная версия OpenUSD==22.11 локально в /.docker/internal/pxr_sys/OpenUSD-22.11.tar.gz
 COPY ./.docker/internal/pxr_sys/OpenUSD-22.11.tar.gz /tmp/OpenUSD-22.11.tar.gz
@@ -99,7 +99,7 @@ COPY ./.docker/internal/pxr_sys/OpenUSD-22.11.tar.gz /tmp/OpenUSD-22.11.tar.gz
     if [ ! -f "${OPENUSD_SRC_DIR}/build_scripts/build_usd.py" ]; then \
         echo "Error: Archive extraction failed or build_usd.py is missing!" && \
         exit 1; \
-# 11 При выполнении build_usd.py добавлена опция --jobs 2 чтобы ограничить использование параллельных вычилений (УБРАТЬ ПЕРЕД БИЛДОМ НА СЕРВЕРЕ)
+# 11 При выполнении build_usd.py добавлена опция --jobs 2 чтобы ограничить использование параллельных вычислений (УБРАТЬ ПЕРЕД БИЛДОМ НА СЕРВЕРЕ)
 
 # 12 Отредактирован build.bash добавлены ограничения на ресурсы при билде и проверки использования видеокарты (УБРАТЬ ПЕРЕД БИЛДОМ НА СЕРВЕРЕ)
     --build-arg CUDA_VISIBLE_DEVICES=0 # Restrict to GPU 0
@@ -115,5 +115,6 @@ RUN $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir stable-baselines3[extra]
     python3 -m pip install --no-cache-dir stable-baselines3[extra]==2.2.1 sb3-contrib==2.2.1
 RUN $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir --upgrade "jax[cuda11_pip]" --extra-index-url https://storage.googleapis.com/jax-releases/jax_cuda_releases.html && \
     python3 -m pip install --no-cache-dir --upgrade "jax[cuda11_pip]" --extra-index-url https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+
 
     
