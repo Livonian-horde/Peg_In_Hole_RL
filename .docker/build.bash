@@ -3,7 +3,7 @@ set -e
 
 ## Configuration
 # Default Docker Hub user (used if user is not logged in)
-DEFAULT_DOCKERHUB_USER="andrejorsula"
+DEFAULT_DOCKERHUB_USER="aleksanderdruk"
 
 ## If the current user is not in the docker group, all docker commands will be run as root
 WITH_SUDO=""
@@ -42,6 +42,9 @@ fi
 # shellcheck disable=SC2206
 DOCKER_BUILD_CMD=(
     ${WITH_SUDO} docker build
+    --build-arg CUDA_VISIBLE_DEVICES=0 # Restrict to GPU 0
+    --build-arg GPU_MEMORY_LIMIT=10240 # Limit GPU memory to 10GB
+    --build-arg NVIDIA_VISIBLE_DEVICES=0  # Ensure NVIDIA runtime uses GPU 0
     "${REPOSITORY_DIR}"
     --tag "${IMAGE_NAME}"
     "${BUILD_ARGS}"

@@ -7,9 +7,9 @@ use rand::seq::SliceRandom;
 use rand_distr::Distribution;
 use std::{io::Write, ops::Deref, pin::Pin};
 
-const EVAL: bool = true;
+const EVAL: bool = false;//true;
 const EVAL_SHOWCASE: bool = false;
-const EVAL_EPISODES_PER_ENV: usize = 1024;
+const EVAL_EPISODES_PER_ENV: usize = 512;
 
 /// Control of velocity in Cartesian space
 /// - transX, transY, transZ, rotX, rotY, rotZ

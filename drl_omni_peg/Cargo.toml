@@ -24,10 +24,10 @@ nalgebra = { workspace = true }
 num-integer = { workspace = true }
 omniverse = { workspace = true }
 pxr = { workspace = true }
-pyo3 = { workspace = true }
 rand = { workspace = true }
 rand_distr = { workspace = true }
 rustc-hash = { workspace = true }
+pyo3 = { workspace = true, features = ["auto-initialize"] }
 
 [lib]
 name = "drl_omni_peg"

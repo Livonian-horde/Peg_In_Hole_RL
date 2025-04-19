@@ -70,7 +70,7 @@ fn main() -> pyo3::PyResult<()> {
                         policy.as_ref(py),
                         env,
                         learning_rate.as_ref(py),
-                        20_000_000,
+                        100_000_000,
                         (N_ENVS * 500) as i64,
                         (N_ENVS * 4) as i64,
                         0.005,

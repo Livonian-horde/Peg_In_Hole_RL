@@ -7,7 +7,7 @@ REPOSITORY_DIR="$(dirname "${SCRIPT_DIR}")"
 ## Configuration
 # Default Docker Hub user and repository name (used if inferred image is not available)
 DEFAULT_DOCKERHUB_USER="andrejorsula"
-DEFAULT_REPOSITORY_NAME="drl_omni_peg"
+DEFAULT_REPOSITORY_NAME="drl_omni_peg-main"
 # Flags for running the container
 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS:-
     --interactive
@@ -22,6 +22,8 @@ ENABLE_GUI="${ENABLE_GUI:-true}"
 # List of volumes to mount (can be updated by passing -v HOST_DIR:DOCKER_DIR:OPTIONS)
 CUSTOM_VOLUMES=(
     "/etc/localtime:/etc/localtime:ro"
+    # Log directory
+    "${LOG_VOLUME_HOST:-"./logs"}:/root/ws/logdir:rw"
     # Omniverse / Isaac Sim
     "${HOME}/.nvidia-omniverse/docker/cache/computecache:/root/.nv/ComputeCache:rw"
     "${HOME}/.nvidia-omniverse/docker/cache/glcache:/root/.cache/nvidia/GLCache:rw"

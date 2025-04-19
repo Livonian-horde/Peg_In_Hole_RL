@@ -5,6 +5,7 @@ ARG ISAAC_SIM_IMAGE_TAG="2023.1.1"
 ### Base image <https://hub.docker.com/_/ubuntu>
 ARG BASE_IMAGE_NAME="ubuntu"
 ARG BASE_IMAGE_TAG="jammy"
+ARG OPENUSD_VERSION="22.11"
 
 FROM ${ISAAC_SIM_IMAGE_NAME}:${ISAAC_SIM_IMAGE_TAG} AS isaac_sim
 FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG} AS base
@@ -16,25 +17,14 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN echo "#!/usr/bin/env bash" >> /entrypoint.bash && \
     chmod +x /entrypoint.bash
 
-### Build OpenUSD
-ARG OPENUSD_VERSION="22.11"
-COPY ./.docker/internal/pxr_sys/patches/src/build_scripts/build_usd.py.patch /tmp/build_usd.py.patch
-# hadolint ignore=SC2016
-RUN OPENUSD_DL_PATH="/tmp/OpenUSD-${OPENUSD_VERSION}.tar.gz" && \
-    OPENUSD_SRC_DIR="/tmp/OpenUSD-${OPENUSD_VERSION}" && \
-    OPENUSD_INSTALL_DIR="${HOME}/openusd" && \
-    echo -e "\n# OpenUSD ${OPENUSD_VERSION}" >> /entrypoint.bash && \
-    echo "export OPENUSD_PATH=\"${OPENUSD_INSTALL_DIR}\"" >> /entrypoint.bash && \
-    echo '# export PATH="${OPENUSD_PATH}/bin${PATH:+:${PATH}}"' >> /entrypoint.bash && \
-    echo '# export LD_LIBRARY_PATH="${OPENUSD_PATH}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"' >> /entrypoint.bash && \
-    echo '# export PYTHONPATH="${OPENUSD_PATH}/lib/python${PYTHONPATH:+:${PYTHONPATH}}"' >> /entrypoint.bash && \
-    apt-get update && \
+### Install necessary libraries for OpenUSD and other dependencies
+RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    clang \
+    python3 \
+    python3-pip \
     cmake \
     curl \
+    wget \
     libarchive-dev \
     libgl-dev \
     libglfw3-dev \
@@ -48,18 +38,51 @@ RUN OPENUSD_DL_PATH="/tmp/OpenUSD-${OPENUSD_VERSION}.tar.gz" && \
     libxt-dev \
     pkg-config \
     python3-dev \
-    python3-pip && \
-    rm -rf /var/lib/apt/lists/* && \
+    xz-utils \
+    libboost-all-dev \
+    tar gzip build-essential \
+    build-essential \
+    ca-certificates \
+    python3-pip \
+    clang && \
     python3 -m pip install --no-cache-dir PyOpenGL==3.1.7 pyside6==6.6.0 && \
-    curl --proto "=https" --tlsv1.2 -sSfL "https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v${OPENUSD_VERSION}.tar.gz" -o "${OPENUSD_DL_PATH}" && \
+    rm -rf /var/lib/apt/lists/*
+
+### Install setuptools before OpenUSD build
+RUN python3 -m pip install --no-cache-dir setuptools==65.5.0
+
+### Install Boost
+RUN wget https://sourceforge.net/projects/boost/files/boost/1.76.0/boost_1_76_0.tar.gz -O /tmp/boost_1_76_0.tar.gz && \
+    tar -xzf /tmp/boost_1_76_0.tar.gz -C /tmp && \
+    cd /tmp/boost_1_76_0 && \
+    ./bootstrap.sh && \
+    ./b2 install && \
+    rm -rf /tmp/boost_1_76_0 /tmp/boost_1_76_0.tar.gz
+
+### Copy OpenUSD to intarnal storage
+COPY ./.docker/internal/pxr_sys/OpenUSD-22.11.tar.gz /tmp/OpenUSD-22.11.tar.gz
+
+# hadolint ignore=SC2016
+RUN set -x && \
+    OPENUSD_DL_PATH="/tmp/OpenUSD-22.11.tar.gz" && \
+    OPENUSD_SRC_DIR="/tmp/OpenUSD-22.11" && \
+    OPENUSD_INSTALL_DIR="${HOME}/openusd" && \
+    echo -e "\n# OpenUSD 22.11" >> /entrypoint.bash && \
+    echo "export OPENUSD_PATH=\"${OPENUSD_INSTALL_DIR}\"" >> /entrypoint.bash && \
+    echo '# export PATH="${OPENUSD_PATH}/bin${PATH:+:${PATH}}"' >> /entrypoint.bash && \
+    echo '# export LD_LIBRARY_PATH="${OPENUSD_PATH}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"' >> /entrypoint.bash && \
+    echo '# export PYTHONPATH="${OPENUSD_PATH}/lib/python${PYTHONPATH:+:${PYTHONPATH}}"' >> /entrypoint.bash && \
+    #curl --proto "=https" --tlsv1.2 -sSfL "https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v22.11.tar.gz" -o "${OPENUSD_DL_PATH}" && \
     mkdir -p "${OPENUSD_SRC_DIR}" && \
     tar xf "${OPENUSD_DL_PATH}" -C "${OPENUSD_SRC_DIR}" --strip-components=1 && \
-    rm "${OPENUSD_DL_PATH}" && \
-    if [[ "${OPENUSD_VERSION}" = "22.11" ]]; then \
-    patch --unified --strip=1 --batch --follow-symlinks --ignore-whitespace --input=/tmp/build_usd.py.patch --directory="${OPENUSD_SRC_DIR}" ; \
+    # Check if the archive was extracted correctly
+    if [ ! -f "${OPENUSD_SRC_DIR}/build_scripts/build_usd.py" ]; then \
+        echo "Error: Archive extraction failed or build_usd.py is missing!" && \
+        exit 1; \
     fi && \
-    rm /tmp/build_usd.py.patch && \
+    rm "${OPENUSD_DL_PATH}" && \
     python3 "${OPENUSD_SRC_DIR}/build_scripts/build_usd.py" \
+    --jobs 2 \
     --build-shared \
     --build-variant=release --prefer-speed-over-safety \
     --use-cxx11-abi=0 \
@@ -179,15 +202,13 @@ RUN apt-get update && \
 ### Install RL dependencies
 # NOTE: Python packages for which Rust bindings are generated via pyo3_bindgen are installed both for Isaac and system (shouldn't be necessary, but avoids some issues)
 RUN $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir setuptools==65.5.0 && \
-    $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir gymnasium==0.29.1 && \
-    $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir stable-baselines3[extra]==2.2.1 sb3-contrib==2.2.1 && \
-    $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir git+https://github.com/AndrejOrsula/dreamerv3.git@no_replay_saver && \
-    $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir --upgrade "jax[cuda11_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html && \
-    python3 -m pip install --no-cache-dir setuptools==65.5.0 && \
-    python3 -m pip install --no-cache-dir gymnasium==0.29.1 && \
-    python3 -m pip install --no-cache-dir stable-baselines3[extra]==2.2.1 sb3-contrib==2.2.1 && \
-    python3 -m pip install --no-cache-dir git+https://github.com/AndrejOrsula/dreamerv3.git@no_replay_saver && \
-    python3 -m pip install --no-cache-dir --upgrade "jax[cuda11_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+    python3 -m pip install --no-cache-dir setuptools==65.5.0
+RUN $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir gymnasium==0.29.1 && \
+    python3 -m pip install --no-cache-dir gymnasium==0.29.1
+RUN $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir stable-baselines3[extra]==2.2.1 sb3-contrib==2.2.1 && \
+    python3 -m pip install --no-cache-dir stable-baselines3[extra]==2.2.1 sb3-contrib==2.2.1
+RUN $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir --upgrade "jax[cuda11_pip]" --extra-index-url https://storage.googleapis.com/jax-releases/jax_cuda_releases.html && \
+    python3 -m pip install --no-cache-dir --upgrade "jax[cuda11_pip]" --extra-index-url https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 
 ### Use Python embedded inside Isaac Sim
 RUN echo "export PYO3_PYTHON=\"${ISAAC_SIM_PYTHON_EXE}\"" >> /entrypoint.bash
@@ -206,13 +227,7 @@ ENV WORKSPACE="${WORKSPACE}"
 WORKDIR ${WORKSPACE}
 
 ### Copy the source
-COPY . "${WORKSPACE}"
-
-# RUN $ISAAC_SIM_PYTHON_EXE -m pip uninstall -y typing_extensions && $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir typing_extensions==4.10.0 && $ISAAC_SIM_PYTHON_EXE -m pip install --no-cache-dir matplotlib
-
-### Build the workspace
-RUN source /entrypoint.bash -- && \
-    cargo build --release --all-targets
+COPY . "${WORKSPACE}" 
 
 ### Generate training set
 RUN source /entrypoint.bash -- && \
