@@ -1,16 +1,6 @@
-# Leveraging Procedural Generation for Learning Autonomous Peg-in-Hole Assembly in Space
+# SYNTHETIC DATA SET AND BASIC STRATEGIES FOR SENSORIMOTOR SKILLS OF ROBOTIC ASSEMBLY OPERATIONS
 
-This project focuses on learning autonomous peg-in-hole assembly with deep reinforcement learning, with a particular emphasis on enhancing generalization and adaptability through procedural generation and domain randomization.
-
-<p align="center" float="middle">
-  <img width="100.0%" src="https://github.com/AndrejOrsula/procgen_for_peg_in_hole_assembly/raw/main/media/sac_in_training.webp"/>
-  <em>SAC agent collecting experience during training.</em>
-</p>
-
-<p align="center" float="middle">
-  <img width="50.0%" src="https://github.com/AndrejOrsula/procgen_for_peg_in_hole_assembly/raw/main/media/dreamerv3_eval_test_set.webp"/><img width="50.0%" src="https://github.com/AndrejOrsula/procgen_for_peg_in_hole_assembly/raw/main/media/dreamerv3_eval_profiles.webp"/>
-  <em>DreamerV3 agent evaluated on novel test set and assembly scenarios.</em>
-</p>
+This project is devoted to learning basic assembly strategies with deep reinforcement learning. Currently it is based on this repo: [drl_omni_peg](https://github.com/AndrejOrsula/drl_omni_peg) and therefore focused on Peg-in-Hole assembly Task
 
 ## Overview
 
@@ -39,38 +29,40 @@ The workspace contains these packages:
 
 - **[drl_omni_peg](drl_omni_peg):** Peg-in-hole environment and RL training/evaluation pipelines
 
-## Instructions
-
-### <a href="#-rust"><img src="https://rustacean.net/assets/rustacean-flat-noshadow.svg" width="16" height="16"></a> Rust
-
-> \[!TIP\]
-> You can install Rust and Cargo through your package manager or via <https://rustup.rs>.
-
 #### Generation of Procedural Peg-in-Hole Modules
 
 The procedural generation of peg-in-hole modules is now available at [AndrejOrsula/blr_procgen](https://github.com/AndrejOrsula/blr_procgen). Both train and test sets can be generated using separate binaries: `generate_peg_in_hole_train` and `generate_peg_in_hole_test`.
 
-#### Random Agent
-
-A random agent can be run either via [`random.rs`](drl_omni_peg/src/bin/random.rs) or [`random_gymnasium.rs`](drl_omni_peg/src/bin/random_gymnasium.rs). The former uses the environment directly, while the latter goes through the Gymnasium API.
-
-```bash
-# Run random agent
-cargo run --release --bin random
-# (alternative) Run random agent through Gymnasium API
-cargo run --release --bin random_gymnasium
-```
+<p align="center" float="middle">
+  <img width="100.0%" src="https://github.com/user-attachments/assets/1672ff86-b5e7-4714-b9e0-9c731c3c232c"/>
+  <em>Examples of generated Peg-Hole pairs.</em>
+</p>
 
 #### Training and Evaluation of RL Agents
 
-Each algorithm is implemented as a separate binary. You can edit the source code directly to modify the hyperparameters and change the training/evaluation pipeline. Pre-trained models are available for download [here](https://drive.google.com/drive/folders/1WmPzUMm2zM5FLCS04aUT0-HNkaUVh7wd).
+Each algorithm is implemented as a separate binary. You can edit the source code directly to modify the hyperparameters and change the training/evaluation pipeline.
 
-- [`dreamerv3.rs`](drl_omni_peg/src/bin/dreamerv3.rs)
 - [`ppo.rs`](drl_omni_peg/src/bin/ppo.rs)
 - [`ppo_recurrent.rs`](drl_omni_peg/src/bin/ppo_recurrent.rs)
 - [`sac.rs`](drl_omni_peg/src/bin/sac.rs)
 - [`tqc.rs`](drl_omni_peg/src/bin/tqc.rs)
 - [`trpo.rs`](drl_omni_peg/src/bin/trpo.rs)
+
+<p align="center" float="middle">
+  <img width="100.0%" src="https://github.com/user-attachments/assets/fc7191a1-7a70-4ff0-8bd1-db2a64ded504"/>
+  <em>Agents training progress in Success Rate and Timesteps till Success.</em>
+</p>
+
+<p align="center" float="middle">
+  <img width="100.0%" src="https://github.com/user-attachments/assets/086658ef-c574-4fe2-8413-0145d72b92de"/>
+  <em>Actor Loss and Critic Loss for TQC during training.</em>
+</p>
+
+<p align="center" float="middle">
+  <img width="100.0%" src="https://github.com/user-attachments/assets/4f394a88-a825-4838-82a8-7ae5ffa7a231"/>
+  <em>
+    Success Rate and Steps till Success for TQC during training.</em>
+</p>
 
 ```bash
 # ALGO in [dreamerv3, ppo, ppo_recurrent, sac, tqc, trpo]
@@ -80,7 +72,7 @@ cargo run --release --bin ALGO
 <details>
 <summary><h3><a href="#-docker"><img src="https://www.svgrepo.com/show/448221/docker.svg" width="16" height="16"></a> Docker</h3></summary>
 
-> To install [Docker](https://docs.docker.com/get-docker) on your system, you can run [`.docker/host/install_docker.bash`](.docker/host/install_docker.bash) to configure Docker with NVIDIA GPU support.
+> To install [Docker](https://docs.docker.com/get-docker), run [`.docker/host/install_docker.bash`](.docker/host/install_docker.bash) to configure Docker with NVIDIA GPU support.
 >
 > ```bash
 > .docker/host/install_docker.bash
@@ -110,12 +102,6 @@ To run the Docker container in a development mode (source code mounted as a volu
 .docker/dev.bash ${TAG:-latest} ${CMD}
 ```
 
-As an alternative, users familiar with [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) can modify the included [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json) to their needs. For convenience, [`.devcontainer/open.bash`](.devcontainer/open.bash) script is available to open this repository as a Dev Container in VS Code.
-
-```bash
-.devcontainer/open.bash
-```
-
 #### Join Container
 
 To join a running Docker container from another terminal, you can use [`.docker/join.bash`](.docker/join.bash) as shown below.
@@ -126,17 +112,8 @@ To join a running Docker container from another terminal, you can use [`.docker/
 
 </details>
 
-## Citation
-
-```bibtex
-@inproceedings{orsula2024leveraging,
-  author    = {Andrej Orsula and Matthieu Geist and Miguel Olivares-Mendez and Carol Martinez},
-  title     = {{Leveraging Procedural Generation for Learning Autonomous Peg-in-Hole Assembly in Space}},
-  year      = {2024},
-  booktitle = {International Conference on Space Robotics (iSpaRo)},
-}
-```
-
-## License
-
-This project is dual-licensed to be compatible with the Rust project, under either the [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE) licenses.
+## References
+<a id="1">[1]</a> 
+Orsula, Andrej and Geist, Matthieu and Olivares-Mendez, Miguel and Martinez, Carol (2024)
+Leveraging Procedural Generation for Learning Autonomous Peg-in-Hole Assembly in Space
+2024 International Conference on Space Robotics (iSpaRo), 357-364, 10.1109/iSpaRo60631.2024.10688111. 
